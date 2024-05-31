@@ -3,11 +3,11 @@ use std::io;
 
 use std::env;
 
+#[derive(Clone)]
 struct Task {
-    id: u32,
-    description: String,
-    due_date: Option<String>,
-    completed: bool,
+    id : u32,
+    description : String,
+    completed : bool,
 }
 
 struct TodoList {
@@ -19,33 +19,49 @@ impl TodoList {
         TodoList { task: Vec::new() }
     }
 
-    fn add_task(&mut self, description: String, due_date: Option<String>) {
-        let id = self.task.len() as u32 + 1;
+    fn add_task(&mut self, description: String) {
+        let end_task = self.task.pop();
+        let id : u32;
+        if let None = end_task {
+            id = 1;
+        } else {
+            id = end_task.clone().unwrap().id + 1;
+            self.task.push(end_task.expect("REASON"));
+        }
         let task = Task {
             id,
             description,
-            due_date,
             completed: false,
         };
         self.task.push(task);
     }
 
     fn complete_task(&mut self, task_id: u32) {
+        let mut found_task : bool = false;
         for task in &mut self.task {
             if task.id == task_id {
                 task.completed = true;
+                found_task = true;
             }
+        }
+        if !found_task {
+            println!("Task not found\n");
         }
     }
 
     fn delete_task(&mut self, task_id: u32) {
+        let mut found_task : bool = false;
         if let Some(index) = self.task.iter().position(|task| task.id == task_id) {
             self.task.remove(index);
+            found_task = true;
+        }
+        if !found_task {
+            println!("Task not found\n");
         }
     }
 
     fn print_list(&mut self) {
-        println!("\nYour List:");
+        println!("Your List:");
         for task in &mut self.task {
             if task.completed == false {
                 println!(
@@ -70,11 +86,11 @@ impl TodoList {
         let mut delete_from_list: bool = false;
 
         for argument in command {
-            if mark_completed == true {
+            if mark_completed {
                 self.complete_task(argument.parse::<u32>().unwrap());
-            } else if add_to_list == true {
-                self.add_task(argument.clone(), None);
-            } else if delete_from_list == true {
+            } else if add_to_list {
+                self.add_task(argument.clone());
+            } else if delete_from_list {
                 self.delete_task(argument.parse::<u32>().unwrap());
             }
 
@@ -104,8 +120,13 @@ fn main() {
     todo_list.do_something(args);
 
     loop {
-        println!("\nPlease input one of the following comands:\n - 'add' followed by the items\n - 'completed' followed by the list number\n - 'delete' followed by the list number\n - 'exit' to exit");
+        println!("\nPlease input one of the following comands:
+ - 'add' followed by the items description(s)
+ - 'completed' followed by the list number(s)
+ - 'delete' followed by the list number(s)
+ - 'exit' to exit");
         let result = get_input();
+        println!("");
         if result == ["exit"] {
             println!("Goodbye :)");
             break;
